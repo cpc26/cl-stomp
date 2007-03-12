@@ -1,4 +1,4 @@
-;; -*- mode: lisp; -*-
+;; -*- mode: lisp; indent-tabs-mode: nil; -*-
 
 (defpackage :cl-stomp
 
