@@ -5,22 +5,22 @@
   (:nicknames :stomp)
 
   (:use :cl
-	:cl-user)
+        :cl-user)
 
   (:export :frame
-	   :set-header
-	   :get-header
-	   :set-destination
-	   :get-destination
-	   :frame-body-of
-	   :frame-name-of
-	   :stomp-connection
-	   :make-connection
-	   :connect
-	   :register
-	   :post
-	   :start
-	   :stop))
+           :set-header
+           :get-header
+           :set-destination
+           :get-destination
+           :frame-body-of
+           :frame-name-of
+           :stomp-connection
+           :make-connection
+           :connect
+           :register
+           :post
+           :start
+           :stop))
 
 (in-package :cl-stomp)
 
@@ -71,33 +71,33 @@
   (let ((result (make-array '(0) :element-type 'character :fill-pointer 0 :adjustable t)))
     (with-output-to-string (stream result)
       (dolist (line lines)
-	(write-line line stream)))
+        (write-line line stream)))
     (string-strip result)))
 
 (defun string-split (str &key (delim " ") (limit nil))
   "Returns a list of words in STR broken at the DELIM boundary."
 
   (labels ((pop-word (str &key (delim " "))
-	     "Returns the first word and rest of STR broken at DELIM."
-	     (let ((start (position delim str :test 'string=)))
-	       (if (null start)
-		   (values str nil)
-		   (let ((start2 (min (length str)
-				      (+ 1 start))))
-		     (values (subseq str 0 start)
-			     (subseq str start2))))))
+             "Returns the first word and rest of STR broken at DELIM."
+             (let ((start (position delim str :test 'string=)))
+               (if (null start)
+                   (values str nil)
+                   (let ((start2 (min (length str)
+                                      (+ 1 start))))
+                     (values (subseq str 0 start)
+                             (subseq str start2))))))
 
-	   (splitter (str delim limit count)
-	     (if (null str)
-		 nil
-		 (if (and (not (null limit))
-			  (>= count limit))
-		     (list str)
-		     (multiple-value-bind (word rest) (pop-word str :delim delim)
-		       (if (not (zerop (length word)))
-			   (append (list (string-strip word)) 
-				   (splitter rest delim limit (incf count)))
-			   (splitter rest delim limit (incf count))))))))
+           (splitter (str delim limit count)
+             (if (null str)
+                 nil
+                 (if (and (not (null limit))
+                          (>= count limit))
+                     (list str)
+                     (multiple-value-bind (word rest) (pop-word str :delim delim)
+                       (if (not (zerop (length word)))
+                           (append (list (string-strip word)) 
+                                   (splitter rest delim limit (incf count)))
+                           (splitter rest delim limit (incf count))))))))
 
     (splitter str delim limit 0)))
 
@@ -105,9 +105,9 @@
   (let ((result ()))
     (with-input-from-string (stream string)
       (loop 
-	 :for line = (read-line stream nil 'eof)
-	 :while (not (eql line 'eof))
-	 :do (setf result (pushnew line result))))
+         :for line = (read-line stream nil 'eof)
+         :while (not (eql line 'eof))
+         :do (setf result (pushnew line result))))
     (nreverse result)))
 
 (defun string-contains (string str-or-char-list)
@@ -149,35 +149,35 @@
   ;; declare some useful local functions
   (labels (
 
-	   (make-header (line)
-	     (map 'list #'string-strip (string-split line :delim ":" :limit 1)))
+           (make-header (line)
+             (map 'list #'string-strip (string-split line :delim ":" :limit 1)))
 
-	   ;; frame name is first line
-	   (find-name (source)
-	     (first source))
+           ;; frame name is first line
+           (find-name (source)
+             (first source))
 
-	   ;; frame headers are second lines through to empty line
-	   (find-headers (source)
-	     (let ((lines (rest source)))
-	       (loop
-		  :for line :in lines
-		  :while (> (length line) 0)
-		  :collect (make-header line))))
+           ;; frame headers are second lines through to empty line
+           (find-headers (source)
+             (let ((lines (rest source)))
+               (loop
+                  :for line :in lines
+                  :while (> (length line) 0)
+                  :collect (make-header line))))
 
-	   ;; frame body is all lines after the empty line
-	   (find-body (source)
-	     (let* ((lines (reverse source))
-		    (result (loop
-			       :for line :in lines
-			       :while (> (length line) 0)
-			       :collect line)))
-	       (string-join (nreverse result)))))
+           ;; frame body is all lines after the empty line
+           (find-body (source)
+             (let* ((lines (reverse source))
+                    (result (loop
+                               :for line :in lines
+                               :while (> (length line) 0)
+                               :collect line)))
+               (string-join (nreverse result)))))
 
     (let ((lines (string-lines string)))
       (let ((name (find-name lines))
-	    (headers (find-headers lines))
-	    (body (find-body lines)))
-	(make-instance 'frame :name name :headers headers :body body)))))
+            (headers (find-headers lines))
+            (body (find-body lines)))
+        (make-instance 'frame :name name :headers headers :body body)))))
 
 (defmethod print-object ((self frame) stream)
   (with-slots (name headers body) self
@@ -199,14 +199,14 @@
 (defmethod set-header ((self frame) key value)
   (with-slots (headers) self
     (if (not (assoc key headers :test #'string=))
-	(setf headers (append (list (list key value)) headers))
-	(let ((result))
-	  (dolist (header headers)
-	    (if (string= (first header) key)
-		(push (list key value) result)
-		(push header result)))
-	  (format t "result: ~s~%" result)
-	  (setf headers result)))))
+        (setf headers (append (list (list key value)) headers))
+        (let ((result))
+          (dolist (header headers)
+            (if (string= (first header) key)
+                (push (list key value) result)
+                (push header result)))
+          (format t "result: ~s~%" result)
+          (setf headers result)))))
 
 ;;-------------------------------------------------------------------------
 ;; stomp
@@ -282,19 +282,19 @@
       ;; open the socket and send the connect string
 
       (with-slots (host port ip socket fd handler) self
-	(setf ip (ip-addr-of host))
-	(setf socket (sk-make))
-	(sk-connect socket ip port)
-	(setf fd (sk-file-desc socket))
-	(setf handler (sb-sys:add-fd-handler fd :input (lambda (x)
-							 (declare (ignore x))
-							 (receive self))))
-	(let ((frame (make-instance 'frame :name "CONNECT")))
-	  (if user
-	      (set-header frame "login" user))
-	  (if pass
-	      (set-header frame "passcode" pass))
-	  (send self frame)))
+        (setf ip (ip-addr-of host))
+        (setf socket (sk-make))
+        (sk-connect socket ip port)
+        (setf fd (sk-file-desc socket))
+        (setf handler (sb-sys:add-fd-handler fd :input (lambda (x)
+                                                         (declare (ignore x))
+                                                         (receive self))))
+        (let ((frame (make-instance 'frame :name "CONNECT")))
+          (if user
+              (set-header frame "login" user))
+          (if pass
+              (set-header frame "passcode" pass))
+          (send self frame)))
 
     ;; just log the error for now
 
@@ -328,7 +328,7 @@
 (defmethod send ((self stomp-connection) string)
   (with-slots (fd) self
     (let ((stream (sb-sys:make-fd-stream fd :output t :element-type '(unsigned-byte 8)
-					 :buffering :none)))
+                                         :buffering :none)))
       (write-sequence (sb-ext:string-to-octets string) stream)
       (finish-output stream))))
 
@@ -336,40 +336,40 @@
   (with-slots (callbacks) self
     (let ((destination (get-destination frame)))
       (loop 
-	 :for (dest func) :in callbacks
-	 :do (if (string= dest destination)
-		 (funcall func frame))))))
+         :for (dest func) :in callbacks
+         :do (if (string= dest destination)
+                 (funcall func frame))))))
   
 (defmethod receive ((self stomp-connection))
   "Called whenever there's activity on the file descriptor."
   (with-slots (socket fd handler callbacks) self
     (let ((str (sb-sys:make-fd-stream fd :input t :element-type '(unsigned-byte 8)
-				      :buffering :full)))
+                                      :buffering :full)))
       (let ((buffer (loop 
-		       :for b = (read-byte str nil 'eof)
-		       :while (listen str)
-		       :collect b)))
+                       :for b = (read-byte str nil 'eof)
+                       :while (listen str)
+                       :collect b)))
 
-	(if (> (length buffer) 0)
+        (if (> (length buffer) 0)
 
-	    ;; if we got something, send it to all the
-	    ;; registered callbacks
+            ;; if we got something, send it to all the
+            ;; registered callbacks
 
-	    (let ((frame (make-frame (string-from-bytes buffer))))
-	      (apply-callbacks self frame))
+            (let ((frame (make-frame (string-from-bytes buffer))))
+              (apply-callbacks self frame))
 
-	    ;; otherwise, it means the other end has terminated,
-	    ;; so close things down (eventually go into a sleep/wait
-	    ;; loop in case of reconnection
+            ;; otherwise, it means the other end has terminated,
+            ;; so close things down (eventually go into a sleep/wait
+            ;; loop in case of reconnection
 
-	    (handler-case
-		(progn
-		  (log-debug "nothing to read from socket~%")
-		  (disconnect self)
-		  (sb-sys:remove-fd-handler handler)
- 		  (sk-close socket))
-	      (condition (c)
-		(log-debug "close: ~a" c))))))))
+            (handler-case
+                (progn
+                  (log-debug "nothing to read from socket~%")
+                  (disconnect self)
+                  (sb-sys:remove-fd-handler handler)
+                  (sk-close socket))
+              (condition (c)
+                (log-debug "close: ~a" c))))))))
 
 (defmethod register ((self stomp-connection) callback destination)
   (with-slots (callbacks) self
@@ -386,11 +386,11 @@
     (send self frame))
   (with-slots (handler socket) self
     (handler-case
-	(sb-sys:remove-fd-handler handler)
+        (sb-sys:remove-fd-handler handler)
       (condition (c)
-	(log-debug "discconnect-handler-error: ~a" c)))
+        (log-debug "discconnect-handler-error: ~a" c)))
     (handler-case
-	(sk-close socket)
+        (sk-close socket)
       (condition (c)
-	(log-debug "disconnect-socket-error: ~a" c)))))
+        (log-debug "disconnect-socket-error: ~a" c)))))
 
