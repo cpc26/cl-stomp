@@ -1,8 +1,16 @@
-;; -*- mode: lisp; -*-
+;; -*- mode: lisp; indent-tabs-mode: nil; -*-
+;;
+;; Available under MIT-style License. see COPYING.
+;;
 
-(defsystem :cl-stomp
-    :version "0.1.0"
-    :depends-on (cl-ppcre)
-    :components
-    ((:file "cl-stomp")))
+(in-package :asdf)
+
+(defsystem cl-stomp
+  :description "Implements the STOMP protocol for connecting to a message broker."
+  :author ""
+  :version ""
+  :licence ""
+  :depends-on (cl-ppcre usocket)
+  :components ((:file "cl-stomp")))
+
 
