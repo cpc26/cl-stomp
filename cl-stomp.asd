@@ -7,10 +7,8 @@
 
 (defsystem cl-stomp
   :description "Implements the STOMP protocol for connecting to a message broker."
-  :author ""
+  :author "Keith Irwin, Matt Reklaitis"
   :version ""
-  :licence ""
-  :depends-on (cl-ppcre usocket)
+  :licence "MIT-style License"
+  :depends-on (usocket)
   :components ((:file "cl-stomp")))
-
-
