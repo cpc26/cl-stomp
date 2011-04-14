@@ -48,22 +48,10 @@
 (defun log-debug (fmt &rest args)
   (declare (ignore fmt args)))
 
-(defun string-from-bytes (bytes)
-  (map 'string #'code-char bytes))
-
-(defun string-to-bytes (string)
-  (map 'sequence #'char-code string))
-
 (defun string-strip (string)
   "Remove spaces, tabs and line enders from a string."
   (check-type string string)
   (string-trim '(#\Space #\NewLine #\Return #\Tab #\Nul) string))
-
-(defun string-join (lines)
-  (let ((result (make-array '(0) :element-type 'character :fill-pointer 0 :adjustable t)))
-    (with-output-to-string (stream result)
-      (dolist (line lines)
-        (write-line line stream)))))
 
 (defun string-split (string delim)
   "Splits STRING at the first occurrence of DELIM and returns the substrings before and after it.
@@ -301,14 +289,11 @@
                    (subscribe conn destination client-ack?)))
         ;; The receive loop
         (setf terminate nil)
-        (let ((recvbuf ""))
+        (let ((recvbuf '()))
           (loop until terminate
                 do (let ((sock (car (usocket:wait-for-input socket :timeout 1))))
                      (when sock
-                       (let* ((recvstr (receive conn))
-                              (newbuf (if (= (length recvbuf) 0) ;only call string-join when necessary
-                                        recvstr
-                                        (string-join (list recvbuf recvstr)))))
+                       (let ((newbuf (append recvbuf (receive conn))))
                          (setf recvbuf (process-receive-buffer conn newbuf)))))))
         (log-debug "Terminated")))))
         
@@ -341,19 +326,19 @@
 
 (defmethod send ((conn connection) (string string))
   (with-slots (stream) conn 
-    (write-sequence (string-to-bytes string) stream)
+    (write-sequence (babel:string-to-octets string :encoding :utf-8) stream)
     (finish-output stream)))
 
 (defmethod receive ((conn connection))
   "Called whenever there's activity on the connection stream.
-   Reads from the stream and returns the received buffer as a string."
+   Reads from the stream and returns the received buffer as a list of bytes."
   (with-slots (stream) conn
     (let ((buffer (loop for b = (read-byte stream nil 'eof)
                         while (listen stream)
                         collect b)))
       (if (> (length buffer) 0)
-        ;; Return the buffer as a string
-        (string-from-bytes buffer)
+        ;; Return the buffer
+        buffer
         ;; Otherwise, it means the other end has terminated,
         ;; so close things down
         (progn
@@ -361,17 +346,21 @@
           (disconnect conn))))))
 
 (defmethod process-receive-buffer ((conn connection) buffer)
-  "Try to extract and process frame(s) from recvbuf.  Returns unprocessed buffer."
+  "Try to extract and process frame(s) from buffer.  Returns unprocessed buffer."
   (labels ((process-frame (frame)
              (log-debug "Frame: ~A" frame)
              (apply-callbacks conn frame))
            (extract-frame ()
-             (multiple-value-bind (before after)
-                 (string-split buffer (string (code-char 0)))
-               (when after
-                 ;; Got one
-                 (process-frame (make-frame-from-string (string-strip before)))
-                 (setf buffer after)))))
+             ;;Identify frames by looking for NULLs
+             ;;This is safe with utf-8 because a 0 will never appear within multibyte characters
+             ;;TODO: Use content-length header when provided instead of relying on NULL delimiter
+             (let ((pos (position 0 buffer)))
+               (when pos
+                 (let* ((framebytes (subseq buffer 0 pos))
+                        (framevector (coerce framebytes '(vector (unsigned-byte 8))))
+                        (framestring (babel:octets-to-string framevector :encoding :utf-8)))
+                   (process-frame (make-frame-from-string (string-strip framestring)))
+                   (setf buffer (subseq buffer (+ pos 1))))))))
     (loop while (extract-frame))
     buffer))
 

@@ -10,5 +10,5 @@
   :author "Keith Irwin, Matt Reklaitis"
   :version ""
   :licence "MIT-style License"
-  :depends-on (usocket)
+  :depends-on (usocket babel)
   :components ((:file "cl-stomp")))
